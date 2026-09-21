@@ -37,6 +37,10 @@
   .chip:hover { border-color: var(--blurple); }
   .banner { background: #fff6e5; border: 1px solid #f1d59b; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
     font-size: 15px; }
+  .banner label { font: inherit; display: block; }
+  .banner input { flex: 1 1 260px; min-width: 0; border: 1px solid #e5c98d; border-radius: 999px; padding: 10px 16px;
+    font: 14px "JetBrains Mono", monospace; background: #fff; color: var(--ink); }
+  .banner input:focus { outline: 2px solid var(--blurple); outline-offset: 1px; }
   .banner code { font-family: "JetBrains Mono", monospace; font-size: 13px; }
   .decision { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
   .action { font: 700 28px/1.1 "Bricolage Grotesque", sans-serif; letter-spacing: -0.01em; }
@@ -72,9 +76,16 @@
   <p class="lede">One call to TypeSafe's System One model answers five typed questions about a comment or DM.
     Plain code then decides what happens: act automatically when Jev is confident, hand to a human when it is not.</p>
 
-  <div id="banner" class="banner" hidden>No API key on the server. Create one at
-    <a href="https://console.typesafe.ai/keys" target="_blank" rel="noopener">console.typesafe.ai/keys</a>,
-    put it in <code>.env</code> as <code>TYPESAFE_API_KEY</code>, and restart.</div>
+  <form id="banner" class="banner" hidden autocomplete="off">
+    <label for="key">No API key yet. Create one at
+      <a href="https://console.typesafe.ai/keys" target="_blank" rel="noopener">console.typesafe.ai/keys</a>
+      and paste it here. It is checked, then saved to <code>.env</code> on this machine only.</label>
+    <div class="row">
+      <input id="key" type="password" placeholder="Paste TypeSafe API key" spellcheck="false" required>
+      <button id="savekey">Save key</button>
+    </div>
+    <p id="keymsg" class="hint" role="status"></p>
+  </form>
 
   <div class="grid">
     <section class="card">
@@ -212,6 +223,30 @@ $("conf").addEventListener("input", (e) => {
   $("confv").textContent = minConfidence.toFixed(2);
   renderCurrent();
   renderQueue();
+});
+
+$("banner").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  $("savekey").disabled = true;
+  $("keymsg").className = "hint";
+  $("keymsg").textContent = "Checking key…";
+  try {
+    const res = await fetch("/api/key", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ apiKey: $("key").value }),
+    });
+    const body = await res.json();
+    if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+    $("key").value = "";
+    $("banner").hidden = true;
+    $("out").innerHTML = `<p class="empty">Key saved. Nothing triaged yet.</p>`;
+  } catch (err) {
+    $("keymsg").className = "hint error";
+    $("keymsg").textContent = err.message;
+  } finally {
+    $("savekey").disabled = false;
+  }
 });
 
 fetch("/api/health").then((r) => r.json()).then((h) => { $("banner").hidden = h.hasKey; });
