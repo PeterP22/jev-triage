@@ -34,8 +34,16 @@ export function route(a, overrides = {}) {
   const t = { ...THRESHOLDS, ...overrides };
   const pct = (/** @type {number} */ n) => `${Math.round(n * 100)}%`;
 
-  if (a.is_spam.noul >= t.hideSpam)
+  if (a.is_spam.noul >= t.hideSpam) {
+    // Real sponsors read a lot like spam. Hiding one costs money, so a disagreement goes to a human.
+    if (a.intent.choice === "lead" || a.intent.choice === "collab")
+      return {
+        action: "human_review",
+        reason: `${a.intent.choice} intent but spam probability ${pct(a.is_spam.noul)}`,
+        automated: false,
+      };
     return { action: "hide", reason: `spam probability ${pct(a.is_spam.noul)}`, automated: true };
+  }
   if (a.is_toxic.noul >= t.hideToxic)
     return { action: "hide", reason: `toxic probability ${pct(a.is_toxic.noul)}`, automated: true };
   if (a.needs_expert_care.noul >= t.expertCare)
@@ -63,6 +71,8 @@ export function route(a, overrides = {}) {
       // Intent says spam but the spam noul was under the hide bar: bury it rather than destroy it.
       return { action: "archive", reason: "likely spam, below the auto-hide bar", automated: true };
     default:
+      if (a.reply_value.score >= t.replyWorthy)
+        return { action: "human_review", reason: "unclear intent but looks worth a reply", automated: false };
       return { action: "archive", reason: "nothing actionable", automated: true };
   }
 }

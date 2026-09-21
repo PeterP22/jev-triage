@@ -19,7 +19,10 @@ export const QUESTIONS = {
     "Should get a thoughtful reply today",
     "Must reply: business opportunity or a reputational risk if ignored",
   ]),
-  is_spam: noul("The message is spam, a scam, or automated promotion"),
+  is_spam: noul("The message is spam, a scam, or automated promotion", {
+    true: "Mass-sent or bot-like text, follower or engagement selling, scam links, or promotion unrelated to the creator",
+    false: "Written for this creator specifically, including a genuine brand or sponsor offering a partnership",
+  }),
   is_toxic: noul("The message contains harassment, slurs, or a personal attack"),
   needs_expert_care: noul(
     "The message describes an injury, a medical condition, or a mental health struggle",

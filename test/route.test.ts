@@ -29,6 +29,17 @@ test("high spam probability hides even when intent disagrees", () => {
   assert.equal(route({ ...base, is_spam: { noul: 0.97 } }).action, "hide");
 });
 
+test("a collab that also looks like spam goes to a human, never hidden", () => {
+  const d = route({ ...base, intent: { choice: "collab", confidence: 0.95 }, is_spam: { noul: 0.95 } });
+  assert.equal(d.action, "human_review");
+});
+
+test("vague messages are archived unless they look worth a reply", () => {
+  const other = { ...base, intent: { choice: "other", confidence: 0.9 } };
+  assert.equal(route({ ...other, reply_value: { score: 0.5 } }).action, "archive");
+  assert.equal(route({ ...other, reply_value: { score: 2 } }).action, "human_review");
+});
+
 test("spam intent under the hide bar is archived, not hidden", () => {
   const d = route({ ...base, intent: { choice: "spam", confidence: 0.95 }, is_spam: { noul: 0.6 } });
   assert.equal(d.action, "archive");
