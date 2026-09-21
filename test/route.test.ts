@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { test } from "node:test";
-import { route } from "../public/route.js";
+import { route } from "../src/shared/route.js";
 
 const base = {
   intent: { choice: "praise", confidence: 0.95 },

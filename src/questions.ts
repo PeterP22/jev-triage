@@ -1,5 +1,5 @@
 // Every question Jev is asked lives here, so the wording is easy to review and tune.
-// Thresholds that act on the answers live in public/route.js.
+// Thresholds that act on the answers live in src/shared/route.ts.
 import { choice, noul, score } from "@typesafe-ai/sdk";
 
 export const QUESTIONS = {

@@ -2,16 +2,22 @@
 // Shared by the server, the tests, and the browser (the threshold slider re-routes instantly
 // from the probabilities already returned, without another API call).
 
-/** @typedef {"hide" | "human_review" | "notify_now" | "draft_reply" | "like" | "archive"} Action */
+export type Action = "hide" | "human_review" | "notify_now" | "draft_reply" | "like" | "archive";
 
-/**
- * @typedef {object} Answers
- * @property {{ choice: string, confidence: number }} intent
- * @property {{ score: number }} reply_value
- * @property {{ noul: number }} is_spam
- * @property {{ noul: number }} is_toxic
- * @property {{ noul: number }} needs_expert_care
- */
+/** The parts of Jev's answers the policy reads. */
+export interface Answers {
+  intent: { choice: string; confidence: number };
+  reply_value: { score: number };
+  is_spam: { noul: number };
+  is_toxic: { noul: number };
+  needs_expert_care: { noul: number };
+}
+
+export interface Decision {
+  action: Action;
+  reason: string;
+  automated: boolean;
+}
 
 export const THRESHOLDS = {
   /** Below this intent confidence nothing is automated; a human looks at it. */
@@ -25,14 +31,12 @@ export const THRESHOLDS = {
   replyWorthy: 1.5,
 };
 
-/**
- * @param {Answers} a
- * @param {Partial<typeof THRESHOLDS>} [overrides]
- * @returns {{ action: Action, reason: string, automated: boolean }}
- */
-export function route(a, overrides = {}) {
+export type Thresholds = typeof THRESHOLDS;
+
+const pct = (n: number) => `${Math.round(n * 100)}%`;
+
+export function route(a: Answers, overrides: Partial<Thresholds> = {}): Decision {
   const t = { ...THRESHOLDS, ...overrides };
-  const pct = (/** @type {number} */ n) => `${Math.round(n * 100)}%`;
 
   if (a.is_spam.noul >= t.hideSpam) {
     // Real sponsors read a lot like spam. Hiding one costs money, so a disagreement goes to a human.

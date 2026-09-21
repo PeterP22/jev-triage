@@ -1,9 +1,10 @@
 import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath } from "node:url";
+import { build } from "esbuild";
 import express from "express";
 import { APIError, AuthenticationError, TypeSafeClient } from "@typesafe-ai/sdk";
 import { QUESTIONS } from "./questions.js";
-import { route } from "../public/route.js";
+import { route } from "./shared/route.js";
 
 // Jev pricing: $0.042 per million input tokens, output free.
 const USD_PER_INPUT_TOKEN = 0.042 / 1_000_000;
@@ -13,7 +14,26 @@ const app = express();
 app.use(express.json({ limit: "32kb" }));
 app.use(express.static(fileURLToPath(new URL("../public", import.meta.url))));
 
-const ENV_PATH = fileURLToPath(new URL("../.env", import.meta.url));
+// The browser code is TypeScript too. It is bundled on request so there is no build step or
+// generated file to keep in sync; the bundle is a few KB and takes a few milliseconds.
+const CLIENT_ENTRY = fileURLToPath(new URL("./client/app.ts", import.meta.url));
+app.get("/app.js", async (_req, res) => {
+  try {
+    const result = await build({
+      entryPoints: [CLIENT_ENTRY],
+      bundle: true,
+      format: "esm",
+      target: "es2022",
+      sourcemap: "inline",
+      write: false,
+    });
+    res.type("text/javascript").send(result.outputFiles[0].text);
+  } catch (err) {
+    res.status(500).type("text/javascript").send(`console.error(${JSON.stringify(String(err))});`);
+  }
+});
+
+const ENV_PATH =fileURLToPath(new URL("../.env", import.meta.url));
 let client = process.env.TYPESAFE_API_KEY ? new TypeSafeClient() : null;
 
 app.get("/api/health", (_req, res) => {

@@ -23,7 +23,7 @@ cannot do cheaply. An LLM only needs to get involved for the few messages worth 
 
 One API call asks five questions ([src/questions.ts](src/questions.ts)): what the person wants, how
 much a personal reply is worth, and whether the message is spam, abusive, or mentions a health issue.
-The rules in [public/route.js](public/route.js) then pick an action:
+The rules in [src/shared/route.ts](src/shared/route.ts) then pick an action:
 
 | Action | When |
 |---|---|
@@ -72,7 +72,7 @@ On `jev-1.13.0`, September 2026, 12 sample messages sent in parallel from Sydney
 ## Tuning
 
 Jev reads instructions literally, so wording matters more than thresholds. Edit the questions in
-`src/questions.ts` first and the thresholds at the top of `public/route.js` second. For example, a bare
+`src/questions.ts` first and the thresholds at the top of `src/shared/route.ts` second. For example, a bare
 "is this spam" question scored a genuine sponsor message at 89%; describing what counts as yes and no
 brought it down to 70%.
 
