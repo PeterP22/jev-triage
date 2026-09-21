@@ -1,0 +1,220 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Jev Triage</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f6f4ff; --card: #ffffff; --ink: #1c1740; --muted: #6b6690; --line: #e3defa;
+    --blurple: #5b4be0; --amethyst: #9b59ff; --tint: #efeaff;
+    --ok: #1f9d6b; --warn: #c77a12; --bad: #cf3d5a;
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.5 Georgia, serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 40px 16px 80px; }
+  h1, h2, button, .chip, label { font-family: "Bricolage Grotesque", system-ui, sans-serif; }
+  h1 { font-size: clamp(30px, 5vw, 46px); line-height: 1.05; margin: 0 0 10px; letter-spacing: -0.02em; }
+  h1 em { font-style: normal; color: var(--blurple); }
+  .lede { color: var(--muted); max-width: 62ch; margin: 0 0 28px; }
+  .mono, .meta, .bar span, .stat b { font-family: "JetBrains Mono", monospace; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 20px; }
+  @media (max-width: 800px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 20px; }
+  h2 { font-size: 14px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--muted); margin: 0 0 12px; }
+  textarea { width: 100%; min-height: 120px; resize: vertical; border: 1px solid var(--line); border-radius: 12px;
+    padding: 12px; font: inherit; color: inherit; background: var(--bg); }
+  textarea:focus { outline: 2px solid var(--blurple); outline-offset: 1px; }
+  .row { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; margin-top: 12px; }
+  button { border: 0; border-radius: 999px; padding: 10px 18px; font-size: 15px; font-weight: 600; cursor: pointer;
+    background: var(--blurple); color: #fff; }
+  button.ghost { background: var(--tint); color: var(--blurple); }
+  button:disabled { opacity: 0.5; cursor: default; }
+  .chip { border: 1px solid var(--line); background: var(--card); color: var(--ink); font-size: 13px; font-weight: 500;
+    padding: 6px 12px; }
+  .chip:hover { border-color: var(--blurple); }
+  .banner { background: #fff6e5; border: 1px solid #f1d59b; border-radius: 12px; padding: 12px 16px; margin-bottom: 20px;
+    font-size: 15px; }
+  .banner code { font-family: "JetBrains Mono", monospace; font-size: 13px; }
+  .decision { display: flex; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  .action { font: 700 28px/1.1 "Bricolage Grotesque", sans-serif; letter-spacing: -0.01em; }
+  .tag { font: 600 12px "JetBrains Mono", monospace; padding: 3px 8px; border-radius: 6px; }
+  .tag.auto { background: #e4f6ee; color: var(--ok); } .tag.human { background: #fdeed8; color: var(--warn); }
+  .reason { color: var(--muted); margin: 4px 0 16px; }
+  .bar { display: grid; grid-template-columns: 110px 1fr 48px; gap: 8px; align-items: center; font-size: 13px; margin: 4px 0; }
+  .bar i { display: block; height: 8px; border-radius: 4px; background: var(--tint); overflow: hidden; }
+  .bar i b { display: block; height: 100%; background: var(--amethyst); border-radius: 4px; }
+  .bar.win i b { background: var(--blurple); } .bar.win span:first-child { font-weight: 600; color: var(--blurple); }
+  .bar span:last-child { text-align: right; color: var(--muted); }
+  .stats { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin-top: 16px; }
+  @media (max-width: 480px) { .stats { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+  .stat { background: var(--bg); border-radius: 10px; padding: 8px 10px; font-size: 12px; color: var(--muted); }
+  .stat b { display: block; font-size: 15px; color: var(--ink); overflow-wrap: anywhere; }
+  .slider { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+  .slider label { display: flex; justify-content: space-between; font-size: 14px; font-weight: 600; }
+  input[type=range] { width: 100%; accent-color: var(--blurple); }
+  .hint { font-size: 13px; color: var(--muted); margin: 4px 0 0; }
+  .empty { color: var(--muted); font-style: italic; }
+  .error { color: var(--bad); }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  .scroll { overflow-x: auto; }
+  th { text-align: left; font: 600 12px "Bricolage Grotesque", sans-serif; text-transform: uppercase; letter-spacing: 0.06em;
+    color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  td.msg { min-width: 220px; } td.mono { white-space: nowrap; font-size: 13px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Inbox triage on <em>Jev</em></h1>
+  <p class="lede">One call to TypeSafe's System One model answers five typed questions about a comment or DM.
+    Plain code then decides what happens: act automatically when Jev is confident, hand to a human when it is not.</p>
+
+  <div id="banner" class="banner" hidden>No API key on the server. Create one at
+    <a href="https://console.typesafe.ai/keys" target="_blank" rel="noopener">console.typesafe.ai/keys</a>,
+    put it in <code>.env</code> as <code>TYPESAFE_API_KEY</code>, and restart.</div>
+
+  <div class="grid">
+    <section class="card">
+      <h2>Incoming message</h2>
+      <textarea id="msg" placeholder="Paste a comment or DM…"></textarea>
+      <div class="row">
+        <button id="go">Triage</button>
+        <button id="batch" class="ghost">Run all samples</button>
+      </div>
+      <div class="row" id="samples"></div>
+    </section>
+
+    <section class="card">
+      <h2>Decision</h2>
+      <div id="out"><p class="empty">Nothing triaged yet.</p></div>
+      <div class="slider">
+        <label for="conf">Minimum confidence to automate <span id="confv" class="mono"></span></label>
+        <input id="conf" type="range" min="0" max="1" step="0.01">
+        <p class="hint">Re-routes from the probabilities already returned. No new API call.</p>
+      </div>
+    </section>
+  </div>
+
+  <section class="card" style="margin-top:20px">
+    <h2>Queue <span id="summary" class="mono" style="text-transform:none;letter-spacing:0"></span></h2>
+    <div class="scroll"><table>
+      <thead><tr><th>Message</th><th>Intent</th><th>Conf</th><th>Action</th><th>ms</th></tr></thead>
+      <tbody id="rows"><tr><td colspan="5" class="empty">Empty.</td></tr></tbody>
+    </table></div>
+  </section>
+</main>
+
+<script type="module">
+import { route, THRESHOLDS } from "./route.js";
+
+const SAMPLES = [
+  "Hey, do you do online coaching? What's the monthly price and do you have spots open?",
+  "This was the clearest explanation of agent evals I've seen. Thank you!",
+  "How did you break through your 275 deadlift plateau? Stuck at 240 for months.",
+  "Your form is dangerous and you clearly have no idea what you're talking about, clown.",
+  "🔥🔥 Grow to 10k followers FAST 👉 bit.ly/x9promo DM me for promo rates",
+  "We're a supplement brand and would love to send product and talk about a paid partnership.",
+  "My lower back has been sharp-pain sore since Tuesday's pulls, should I keep training through it?",
+  "Not sure RAG is dead like you said, long context still falls over on our 2M token corpora.",
+  "lol",
+];
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => s.replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" })[c]);
+const pct = (n) => `${Math.round(n * 100)}%`;
+const label = (a) => a.replace(/_/g, " ");
+
+let minConfidence = THRESHOLDS.minConfidence;
+let current = null;
+const queue = [];
+
+async function triage(message) {
+  const res = await fetch("/api/triage", {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ message, platform: "instagram" }),
+  });
+  const body = await res.json();
+  if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
+  return { message, ...body };
+}
+
+function bars(probs, winner) {
+  return Object.entries(probs).sort((a, b) => b[1] - a[1]).map(([k, v]) =>
+    `<div class="bar${k === winner ? " win" : ""}"><span>${esc(k)}</span><i><b style="width:${v * 100}%"></b></i><span>${pct(v)}</span></div>`).join("");
+}
+
+function renderCurrent() {
+  if (!current) return;
+  const { answers: a, meta } = current;
+  const d = route(a, { minConfidence });
+  $("out").innerHTML = `
+    <div class="decision"><span class="action">${label(d.action)}</span>
+      <span class="tag ${d.automated ? "auto" : "human"}">${d.automated ? "AUTOMATED" : "HUMAN"}</span></div>
+    <p class="reason">${esc(d.reason)}</p>
+    ${bars(a.intent.probabilities, a.intent.choice)}
+    <div class="stats">
+      <div class="stat">confidence<b>${pct(a.intent.confidence)}</b></div>
+      <div class="stat">reply value<b>${a.reply_value.score.toFixed(2)} / 4</b></div>
+      <div class="stat">spam<b>${pct(a.is_spam.noul)}</b></div>
+      <div class="stat">toxic<b>${pct(a.is_toxic.noul)}</b></div>
+      <div class="stat">health<b>${pct(a.needs_expert_care.noul)}</b></div>
+      <div class="stat">latency<b>${meta.latencyMs} ms</b></div>
+      <div class="stat">tokens in<b>${meta.inputTokens}</b></div>
+      <div class="stat">cost<b>$${meta.costUsd.toFixed(6)}</b></div>
+    </div>`;
+}
+
+function renderQueue() {
+  if (!queue.length) return;
+  $("rows").innerHTML = queue.map((r) => {
+    const d = route(r.answers, { minConfidence });
+    return `<tr><td class="msg">${esc(r.message)}</td><td>${esc(r.answers.intent.choice)}</td>
+      <td class="mono">${pct(r.answers.intent.confidence)}</td>
+      <td><span class="tag ${d.automated ? "auto" : "human"}">${label(d.action)}</span></td>
+      <td class="mono">${r.meta.latencyMs}</td></tr>`;
+  }).join("");
+  const auto = queue.filter((r) => route(r.answers, { minConfidence }).automated).length;
+  const cost = queue.reduce((s, r) => s + r.meta.costUsd, 0);
+  $("summary").textContent = `· ${auto}/${queue.length} automated · $${cost.toFixed(6)} total`;
+}
+
+async function run(messages) {
+  $("go").disabled = $("batch").disabled = true;
+  try {
+    const results = await Promise.all(messages.map(triage));
+    queue.unshift(...results);
+    current = results[0];
+    renderCurrent();
+    renderQueue();
+  } catch (err) {
+    $("out").innerHTML = `<p class="error">${esc(err.message)}</p>`;
+  } finally {
+    $("go").disabled = $("batch").disabled = false;
+  }
+}
+
+$("samples").innerHTML = SAMPLES.map((s, i) =>
+  `<button class="chip" data-i="${i}">${esc(s.length > 34 ? s.slice(0, 32) + "…" : s)}</button>`).join("");
+$("samples").addEventListener("click", (e) => {
+  const i = e.target.dataset?.i;
+  if (i !== undefined) $("msg").value = SAMPLES[i];
+});
+$("go").addEventListener("click", () => { const m = $("msg").value.trim(); if (m) run([m]); });
+$("batch").addEventListener("click", () => run(SAMPLES));
+$("conf").value = minConfidence;
+$("confv").textContent = minConfidence.toFixed(2);
+$("conf").addEventListener("input", (e) => {
+  minConfidence = Number(e.target.value);
+  $("confv").textContent = minConfidence.toFixed(2);
+  renderCurrent();
+  renderQueue();
+});
+
+fetch("/api/health").then((r) => r.json()).then((h) => { $("banner").hidden = h.hasKey; });
+</script>
+</body>
+</html>
